@@ -20,7 +20,7 @@ var initCmd = &cobra.Command{
 var initPrefix string
 
 func init() {
-	initCmd.Flags().StringVar(&initPrefix, "prefix", "", "Issue ID prefix (default: directory name)")
+	initCmd.Flags().StringVarP(&initPrefix, "prefix", "p", "", "Issue ID prefix (default: directory name)")
 	rootCmd.AddCommand(initCmd)
 }
 
