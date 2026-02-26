@@ -1,0 +1,13 @@
+# Binary
+bd
+
+# Beads reference source (not part of bd-lite)
+beads/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
