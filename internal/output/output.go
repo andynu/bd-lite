@@ -172,35 +172,28 @@ func PrintMessage(msg string) {
 	fmt.Println(msg)
 }
 
-// PrintArchiveResult prints the result of an archive/cleanup operation.
-func PrintArchiveResult(moved int, dryRun bool) {
-	if JSONMode {
-		printJSON(map[string]interface{}{
-			"count":   moved,
-			"dry_run": dryRun,
-		})
-		return
-	}
-	if dryRun {
-		fmt.Printf("Would archive %d closed issue(s)\n", moved)
-	} else {
-		fmt.Printf("Archived %d closed issue(s)\n", moved)
-	}
-}
-
 // PrintCleanupResult prints the result of a cleanup operation.
-func PrintCleanupResult(deleted int, dryRun bool) {
+func PrintCleanupResult(count int, noArchive bool, dryRun bool) {
 	if JSONMode {
 		printJSON(map[string]interface{}{
-			"count":   deleted,
-			"dry_run": dryRun,
+			"count":      count,
+			"archived":   !noArchive,
+			"dry_run":    dryRun,
 		})
 		return
 	}
-	if dryRun {
-		fmt.Printf("Would delete %d closed issue(s)\n", deleted)
+	if noArchive {
+		if dryRun {
+			fmt.Printf("Would delete %d closed issue(s)\n", count)
+		} else {
+			fmt.Printf("Deleted %d closed issue(s)\n", count)
+		}
 	} else {
-		fmt.Printf("Deleted %d closed issue(s)\n", deleted)
+		if dryRun {
+			fmt.Printf("Would archive and delete %d closed issue(s)\n", count)
+		} else {
+			fmt.Printf("Archived and deleted %d closed issue(s)\n", count)
+		}
 	}
 }
 

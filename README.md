@@ -44,15 +44,14 @@ bd close myproject-abc --reason "Fixed"
 | `bd dep add <id> <depends-on>` | Add a blocking dependency |
 | `bd dep remove <id> <depends-on>` | Remove a dependency |
 | `bd dep tree <id>` | ASCII dependency tree |
-| `bd archive [--older-than N --dry-run]` | Move closed issues to `archive.jsonl` |
-| `bd cleanup [--older-than N --dry-run]` | Permanently delete closed issues |
+| `bd cleanup [--older-than N --dry-run --no-archive]` | Archive and delete closed issues |
 | `bd comment <id> "text"` | Add a comment |
 
 All commands support `--json` for machine-readable output.
 
 ## Data Model
 
-Everything lives in `.beads/issues.jsonl` -- one JSON object per line, wire-compatible with the full beads format. Closed issues can be moved to `.beads/archive.jsonl` with `bd archive`.
+Everything lives in `.beads/issues.jsonl` -- one JSON object per line, wire-compatible with the full beads format. Closed issues can be archived to `.beads/archive.jsonl` and removed with `bd cleanup`.
 
 **Issue fields:** id, title, description, status, priority (0-4), issue_type, assignee, labels, dependencies, comments, timestamps.
 
