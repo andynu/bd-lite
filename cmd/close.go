@@ -20,7 +20,7 @@ var closeCmd = &cobra.Command{
 var closeReason string
 
 func init() {
-	closeCmd.Flags().StringVar(&closeReason, "reason", "", "Reason for closing")
+	closeCmd.Flags().StringVarP(&closeReason, "reason", "r", "", "Reason for closing")
 	rootCmd.AddCommand(closeCmd)
 }
 
