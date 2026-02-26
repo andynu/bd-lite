@@ -39,6 +39,8 @@ func runComment(cmd *cobra.Command, args []string) error {
 	}
 
 	issue := st.Get(id)
-	output.PrintUpdated(issue)
+	// Return the newly added comment (last in the list), matching beads behavior
+	comment := issue.Comments[len(issue.Comments)-1]
+	output.PrintComment(comment)
 	return nil
 }

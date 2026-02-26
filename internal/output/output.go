@@ -141,6 +141,19 @@ func PrintCreated(issue *types.Issue) {
 	fmt.Printf("Created %s: %s\n", issue.ID, issue.Title)
 }
 
+// PrintComment prints a single comment in human or JSON format.
+func PrintComment(comment *types.Comment) {
+	if JSONMode {
+		printJSON(comment)
+		return
+	}
+	author := comment.Author
+	if author == "" {
+		author = "anonymous"
+	}
+	fmt.Printf("[%s] %s: %s\n", comment.CreatedAt.Format("2006-01-02 15:04"), author, comment.Text)
+}
+
 // PrintUpdated prints a confirmation after updating an issue.
 func PrintUpdated(issue *types.Issue) {
 	if JSONMode {
