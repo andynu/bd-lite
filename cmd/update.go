@@ -28,12 +28,12 @@ var (
 )
 
 func init() {
-	updateCmd.Flags().StringVar(&updateStatus, "status", "", "New status")
-	updateCmd.Flags().IntVar(&updatePriority, "priority", -1, "New priority (0-4)")
+	updateCmd.Flags().StringVarP(&updateStatus, "status", "s", "", "New status")
+	updateCmd.Flags().IntVarP(&updatePriority, "priority", "p", -1, "New priority (0-4)")
 	updateCmd.Flags().StringVar(&updateTitle, "title", "", "New title")
-	updateCmd.Flags().StringVar(&updateDescription, "description", "", "New description")
+	updateCmd.Flags().StringVarP(&updateDescription, "description", "d", "", "New description")
 	updateCmd.Flags().StringVar(&updateAssignee, "assignee", "", "New assignee")
-	updateCmd.Flags().StringVar(&updateType, "type", "", "New issue type")
+	updateCmd.Flags().StringVarP(&updateType, "type", "t", "", "New issue type")
 	updateCmd.Flags().StringSliceVar(&updateLabels, "labels", nil, "Set labels")
 	rootCmd.AddCommand(updateCmd)
 }
