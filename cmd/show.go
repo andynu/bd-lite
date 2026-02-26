@@ -9,10 +9,11 @@ import (
 )
 
 var showCmd = &cobra.Command{
-	Use:   "show <id> [<id>...]",
-	Short: "Display full issue details",
-	Args:  cobra.MinimumNArgs(1),
-	RunE:  runShow,
+	Use:     "show <id> [<id>...]",
+	Aliases: []string{"view"},
+	Short:   "Display full issue details",
+	Args:    cobra.MinimumNArgs(1),
+	RunE:    runShow,
 }
 
 func init() {
