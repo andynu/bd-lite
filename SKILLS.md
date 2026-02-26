@@ -6,20 +6,22 @@
 # Find work
 bd ready                           # Unblocked issues ready to work
 bd list                            # Open issues (excludes closed)
-bd list --status=open              # Filter by status
-bd list --status=in_progress       # Your active work
+bd list -s open                    # Filter by status
+bd list -s in_progress             # Your active work
 bd list --all                      # Include closed issues
 bd show <id>                       # Full issue details with comments
+bd view <id>                       # Alias for show
 
-# Create issues
+# Create issues (aliases: create, new)
 bd create "title" -t bug -p 1 --json
 bd create "title" --deps blocks:<id>
 # Priority: 0-4 (0=critical, 2=medium, 4=backlog). NOT "high"/"medium"/"low"
 
 # Update
-bd update <id> --status in_progress
-bd update <id> --priority 1 --assignee=username
-bd close <id> --reason "Done"
+bd update <id> -s in_progress
+bd update <id> -p 1 --assignee=username
+bd update <id> -t bug -d "description"
+bd close <id> -r "Done"
 bd close <id1> <id2> ...           # Close multiple at once
 
 # Dependencies
@@ -35,6 +37,10 @@ bd cleanup                         # Archive and delete closed issues
 bd cleanup --older-than 30         # Only issues closed 30+ days ago
 bd cleanup --no-archive            # Delete without archiving
 bd cleanup --dry-run               # Preview what would happen
+
+# Init
+bd init                            # Initialize .beads/ (prefix from dir name)
+bd init -p myproject               # Custom prefix
 ```
 
 All commands support `--json` for machine-readable output.
@@ -60,10 +66,10 @@ All commands support `--json` for machine-readable output.
 ## Workflow
 
 1. `bd ready` - find unblocked work
-2. `bd update <id> --status in_progress` - claim it
+2. `bd update <id> -s in_progress` - claim it
 3. Work on it
 4. Discover new issues? `bd create "..." --deps blocks:<id>`
-5. `bd close <id> --reason "Done"` - mark complete
+5. `bd close <id> -r "Done"` - mark complete
 6. Commit `.beads/issues.jsonl` with code changes
 
 ## Rules
