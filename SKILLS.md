@@ -12,8 +12,8 @@ bd list --all                      # Include closed issues
 bd show <id>                       # Full issue details with comments
 
 # Create issues
-bd add "title" -t bug -p 1 --json
-bd add "title" --deps blocks:<id>
+bd create "title" -t bug -p 1 --json
+bd create "title" --deps blocks:<id>
 # Priority: 0-4 (0=critical, 2=medium, 4=backlog). NOT "high"/"medium"/"low"
 
 # Update
@@ -62,7 +62,7 @@ All commands support `--json` for machine-readable output.
 1. `bd ready` - find unblocked work
 2. `bd update <id> --status in_progress` - claim it
 3. Work on it
-4. Discover new issues? `bd add "..." --deps blocks:<id>`
+4. Discover new issues? `bd create "..." --deps blocks:<id>`
 5. `bd close <id> --reason "Done"` - mark complete
 6. Commit `.beads/issues.jsonl` with code changes
 

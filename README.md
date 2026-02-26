@@ -22,8 +22,8 @@ go build -o bd .
 
 ```bash
 bd init --prefix myproject
-bd add "Fix login bug" -t bug -p 1
-bd add "Add dark mode" -t feature
+bd create "Fix login bug" -t bug -p 1
+bd create "Add dark mode" -t feature
 bd list
 bd update myproject-abc --status in_progress
 bd ready
@@ -35,7 +35,7 @@ bd close myproject-abc --reason "Fixed"
 | Command | Description |
 |---------|-------------|
 | `bd init [--prefix X]` | Create `.beads/` directory with config |
-| `bd add "title" [-p -t -d -a -l --deps]` | Create an issue |
+| `bd create "title" [-p -t -d -a -l --deps]` | Create an issue |
 | `bd update <id> [--status --priority ...]` | Modify issue fields |
 | `bd close <id> [--reason "..."]` | Close an issue |
 | `bd show <id> [<id>...]` | Display full issue details |
