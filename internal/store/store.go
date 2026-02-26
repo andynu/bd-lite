@@ -29,6 +29,17 @@ func Load(beadsDir string) (*Store, error) {
 		path:     filepath.Join(beadsDir, "issues.jsonl"),
 	}
 
+	// Migrate legacy beads.jsonl → issues.jsonl
+	if _, err := os.Stat(s.path); os.IsNotExist(err) {
+		legacyPath := filepath.Join(beadsDir, "beads.jsonl")
+		if _, err := os.Stat(legacyPath); err == nil {
+			fmt.Fprintln(os.Stderr, "Migrating beads.jsonl → issues.jsonl")
+			if err := os.Rename(legacyPath, s.path); err != nil {
+				return nil, fmt.Errorf("migrate beads.jsonl: %w", err)
+			}
+		}
+	}
+
 	// Detect prefix
 	prefix, err := s.detectPrefix()
 	if err != nil {
