@@ -3,7 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"bd-lite/internal/output"
 	"bd-lite/internal/store"
@@ -35,7 +37,34 @@ func init() {
 }
 
 func Execute() error {
-	return rootCmd.Execute()
+	err := rootCmd.Execute()
+	if err == nil {
+		return nil
+	}
+
+	// If cobra doesn't recognize the command, try bd-<cmd> in PATH
+	msg := err.Error()
+	if strings.HasPrefix(msg, "unknown command") {
+		args := os.Args[1:]
+		if len(args) > 0 {
+			ext, lookErr := exec.LookPath("bd-" + args[0])
+			if lookErr == nil {
+				cmd := exec.Command(ext, args[1:]...)
+				cmd.Stdin = os.Stdin
+				cmd.Stdout = os.Stdout
+				cmd.Stderr = os.Stderr
+				if runErr := cmd.Run(); runErr != nil {
+					if exitErr, ok := runErr.(*exec.ExitError); ok {
+						os.Exit(exitErr.ExitCode())
+					}
+					return runErr
+				}
+				return nil
+			}
+		}
+	}
+
+	return err
 }
 
 func loadStore() error {
