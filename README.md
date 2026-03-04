@@ -79,6 +79,11 @@ If you need any of these, use [beads](https://github.com/steveyegge/beads):
 - Hierarchical (child) issues
 - Soft-delete / tombstones
 
+## Other Options
+
+- [beans](https://github.com/hmans/beans) -- Go CLI issue tracker storing tasks as plain Markdown files in `.beans/`. Built-in GraphQL query engine and terminal UI.
+- [ticket](https://github.com/wedow/ticket) -- Bash-based issue tracker storing tickets as Markdown with YAML frontmatter in `.tickets/`. Unix-inspired, zero setup, plugin extensible.
+
 ## License
 
 MIT
