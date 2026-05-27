@@ -39,7 +39,7 @@ func PrintIssue(issue *types.Issue) {
 	if len(issue.Dependencies) > 0 {
 		fmt.Printf("  Dependencies:\n")
 		for _, dep := range issue.Dependencies {
-			fmt.Printf("    %s %s %s\n", dep.IssueID, dep.Type, dep.DependsOnID)
+			fmt.Printf("    depends on %s (%s)\n", dep.DependsOnID, dep.Type)
 		}
 	}
 	if len(issue.Comments) > 0 {
