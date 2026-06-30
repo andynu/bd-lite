@@ -13,11 +13,16 @@ func (s *Store) ResolveID(partial string) (string, error) {
 		return partial, nil
 	}
 
-	// Partial match: check if partial is a prefix of any ID
+	// Partial match: accept either a prefix of the full ID (e.g. "bd-lite-pr")
+	// or a prefix of the bare suffix code (e.g. "prv" for "bd-lite-prv").
+	seen := make(map[string]bool)
 	var matches []string
 	for id := range s.issues {
-		if strings.HasPrefix(id, partial) {
-			matches = append(matches, id)
+		if strings.HasPrefix(id, partial) || strings.HasPrefix(suffixOf(id), partial) {
+			if !seen[id] {
+				seen[id] = true
+				matches = append(matches, id)
+			}
 		}
 	}
 
@@ -29,6 +34,16 @@ func (s *Store) ResolveID(partial string) (string, error) {
 	default:
 		return "", fmt.Errorf("ambiguous ID '%s' matches %d issues: %s", partial, len(matches), strings.Join(matches, ", "))
 	}
+}
+
+// suffixOf returns the bare suffix code of an issue ID (the segment after the
+// last "-"). For "bd-lite-prv" it returns "prv"; for an ID with no "-" it
+// returns the whole string.
+func suffixOf(id string) string {
+	if i := strings.LastIndex(id, "-"); i >= 0 {
+		return id[i+1:]
+	}
+	return id
 }
 
 // ResolveIDs resolves multiple partial IDs, returning full IDs.

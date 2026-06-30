@@ -63,7 +63,7 @@ Everything lives in `.beads/issues.jsonl` -- one JSON object per line, wire-comp
 
 ## ID Generation
 
-IDs use the same scheme as beads: SHA256 hash of content, encoded as base36, with adaptive length (3-8 characters) based on the birthday paradox to keep collision probability under 25%. Partial ID matching works on all commands.
+IDs use the same scheme as beads: SHA256 hash of content, encoded as base36, with adaptive length (3-8 characters) based on the birthday paradox to keep collision probability under 25%. Partial ID matching works on all commands: you can pass a prefix of the full ID (`myproject-ab`) or just the bare suffix code (`ab` for `myproject-abc`), as long as it resolves unambiguously.
 
 ## What's Not Here
 
