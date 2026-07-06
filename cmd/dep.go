@@ -29,7 +29,7 @@ var depRemoveCmd = &cobra.Command{
 
 var depTreeCmd = &cobra.Command{
 	Use:   "tree <id>",
-	Short: "Show dependency tree",
+	Short: "Show dependency tree (what <id> depends on, recursively)",
 	Args:  cobra.ExactArgs(1),
 	RunE:  runDepTree,
 }
@@ -96,6 +96,6 @@ func runDepTree(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	output.PrintTree(tree, "", true)
+	output.PrintTree(tree)
 	return nil
 }

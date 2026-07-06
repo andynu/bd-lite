@@ -81,35 +81,31 @@ func PrintIssueList(issues []*types.Issue) {
 	fmt.Printf("\n%d issue(s)\n", len(issues))
 }
 
-// PrintTree prints a dependency tree.
-func PrintTree(node *store.TreeNode, prefix string, isLast bool) {
+// PrintTree prints a dependency tree: the root issue with everything it
+// depends on (recursively) nested beneath it.
+func PrintTree(node *store.TreeNode) {
 	if JSONMode {
 		printJSON(flattenTree(node))
 		return
 	}
 
+	fmt.Printf("%s %s  [%s]\n", node.Issue.ID, node.Issue.Title, node.Issue.Status)
+	for i, child := range node.Children {
+		printSubtree(child, "", i == len(node.Children)-1)
+	}
+}
+
+func printSubtree(node *store.TreeNode, prefix string, isLast bool) {
 	connector := "├── "
+	childPrefix := prefix + "│   "
 	if isLast {
 		connector = "└── "
+		childPrefix = prefix + "    "
 	}
-	if prefix == "" {
-		// Root node, no connector
-		fmt.Printf("%s %s  [%s]\n", node.Issue.ID, node.Issue.Title, node.Issue.Status)
-	} else {
-		fmt.Printf("%s%s%s %s  [%s]\n", prefix, connector, node.Issue.ID, node.Issue.Title, node.Issue.Status)
-	}
-
-	childPrefix := prefix
-	if prefix != "" {
-		if isLast {
-			childPrefix += "    "
-		} else {
-			childPrefix += "│   "
-		}
-	}
+	fmt.Printf("%s%s%s %s  [%s]\n", prefix, connector, node.Issue.ID, node.Issue.Title, node.Issue.Status)
 
 	for i, child := range node.Children {
-		PrintTree(child, childPrefix, i == len(node.Children)-1)
+		printSubtree(child, childPrefix, i == len(node.Children)-1)
 	}
 }
 
@@ -189,9 +185,9 @@ func PrintMessage(msg string) {
 func PrintCleanupResult(count int, noArchive bool, dryRun bool) {
 	if JSONMode {
 		printJSON(map[string]interface{}{
-			"count":      count,
-			"archived":   !noArchive,
-			"dry_run":    dryRun,
+			"count":    count,
+			"archived": !noArchive,
+			"dry_run":  dryRun,
 		})
 		return
 	}

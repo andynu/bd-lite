@@ -334,14 +334,17 @@ func (s *Store) buildTree(issue *types.Issue, visited map[string]bool) *TreeNode
 
 	node := &TreeNode{Issue: issue}
 
-	// Find all issues that depend on this issue (this issue blocks them)
-	for _, other := range s.issues {
-		for _, dep := range other.Dependencies {
-			if dep.DependsOnID == issue.ID && dep.Type == types.DepBlocks {
-				child := s.buildTree(other, visited)
-				node.Children = append(node.Children, child)
-			}
+	// Follow what this issue depends on: for an epic that depends on its
+	// children, the epic is the root and the children hang under it.
+	for _, dep := range issue.Dependencies {
+		if dep.Type != types.DepBlocks {
+			continue
 		}
+		child := s.Get(dep.DependsOnID)
+		if child == nil {
+			continue
+		}
+		node.Children = append(node.Children, s.buildTree(child, visited))
 	}
 
 	sort.Slice(node.Children, func(i, j int) bool {

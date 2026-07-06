@@ -43,7 +43,7 @@ bd close myproject-abc --reason "Fixed"
 | `bd ready` | Show unblocked work |
 | `bd dep add <id> <depends-on>` | Add a blocking dependency |
 | `bd dep remove <id> <depends-on>` | Remove a dependency |
-| `bd dep tree <id>` | ASCII dependency tree |
+| `bd dep tree <id>` | ASCII tree of what `<id>` depends on, recursively |
 | `bd cleanup [--older-than N --dry-run --no-archive]` | Archive and delete closed issues |
 | `bd comment <id> "text"` | Add a comment |
 
