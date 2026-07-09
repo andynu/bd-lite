@@ -74,9 +74,9 @@ func collisionProbability(numIssues int, idLength int) float64 {
 // computeAdaptiveLength determines the optimal ID length for the current issue count.
 func computeAdaptiveLength(numIssues int) int {
 	const (
-		minLength            = 3
-		maxLength            = 8
-		maxCollisionProb     = 0.25
+		minLength        = 3
+		maxLength        = 8
+		maxCollisionProb = 0.25
 	)
 	for length := minLength; length <= maxLength; length++ {
 		if collisionProbability(numIssues, length) <= maxCollisionProb {
