@@ -551,11 +551,11 @@ func stubGit(t *testing.T, name string) {
 
 func TestName(t *testing.T) {
 	tests := []struct {
-		name     string
-		bdActor  string
-		gitName  string
-		user     string
-		want     string
+		name    string
+		bdActor string
+		gitName string
+		user    string
+		want    string
 	}{
 		{"BD_ACTOR wins over git and USER", "ci-bot", "Andy Nutter-Upham", "andy", "ci-bot"},
 		{"git wins over USER", "", "Andy Nutter-Upham", "andy", "Andy Nutter-Upham"},
