@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"bd-lite/internal/actor"
 	"bd-lite/internal/output"
 	"bd-lite/internal/types"
 
@@ -47,6 +48,7 @@ func runCreate(cmd *cobra.Command, args []string) error {
 		Priority:    createPriority,
 		IssueType:   types.IssueType(createType),
 		Assignee:    createAssignee,
+		CreatedBy:   actor.Name(),
 		Labels:      createLabels,
 		CreatedAt:   now,
 		UpdatedAt:   now,

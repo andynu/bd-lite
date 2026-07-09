@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"os/user"
-
+	"bd-lite/internal/actor"
 	"bd-lite/internal/output"
 
 	"github.com/spf13/cobra"
@@ -25,12 +24,7 @@ func runComment(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	author := ""
-	if u, err := user.Current(); err == nil {
-		author = u.Username
-	}
-
-	if err := st.AddComment(id, args[1], author); err != nil {
+	if err := st.AddComment(id, args[1], actor.Name()); err != nil {
 		return err
 	}
 

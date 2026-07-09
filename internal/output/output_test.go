@@ -95,3 +95,30 @@ func TestPrintTreeRendersRootAndChildren(t *testing.T) {
 		t.Errorf("tree output should not contain directional wording:\n%s", out)
 	}
 }
+
+// created_by is optional forever. An issue that has it shows who; an issue that
+// lacks it must render exactly as it did before the field existed.
+func TestPrintIssueCreatedBySuffix(t *testing.T) {
+	now := time.Date(2026, 7, 9, 12, 7, 0, 0, time.UTC)
+	mk := func(createdBy string) *types.Issue {
+		return &types.Issue{
+			ID: "bd-lite-x1y", Title: "Record whodunnit",
+			Status: types.StatusOpen, IssueType: types.TypeFeature,
+			CreatedBy: createdBy,
+			CreatedAt: now, UpdatedAt: now,
+		}
+	}
+
+	with := captureStdout(t, func() { PrintIssue(mk("Andy Nutter-Upham")) })
+	if !strings.Contains(with, "Created:  2026-07-09 12:07 by Andy Nutter-Upham") {
+		t.Errorf("expected creator suffix on the Created line, got:\n%s", with)
+	}
+
+	without := captureStdout(t, func() { PrintIssue(mk("")) })
+	if !strings.Contains(without, "Created:  2026-07-09 12:07\n") {
+		t.Errorf("expected unchanged Created line when created_by is absent, got:\n%s", without)
+	}
+	if strings.Contains(without, " by ") {
+		t.Errorf("rendered a creator suffix for an issue that has none:\n%s", without)
+	}
+}

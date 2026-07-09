@@ -55,7 +55,11 @@ func PrintIssue(issue *types.Issue) {
 	if issue.CloseReason != "" {
 		fmt.Printf("  Closed:   %s (%s)\n", issue.ClosedAt.Format("2006-01-02"), issue.CloseReason)
 	}
-	fmt.Printf("  Created:  %s\n", issue.CreatedAt.Format("2006-01-02 15:04"))
+	created := issue.CreatedAt.Format("2006-01-02 15:04")
+	if issue.CreatedBy != "" {
+		created += " by " + issue.CreatedBy
+	}
+	fmt.Printf("  Created:  %s\n", created)
 	if issue.UpdatedAt != issue.CreatedAt {
 		fmt.Printf("  Updated:  %s\n", issue.UpdatedAt.Format("2006-01-02 15:04"))
 	}
