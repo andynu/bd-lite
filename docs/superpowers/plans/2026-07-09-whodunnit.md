@@ -212,9 +212,16 @@ func TestIssueWithoutExtraKeepsStructKeyOrder(t *testing.T) {
 
 	out := encodeLikeStore(t, &issue)
 
-	idAt, titleAt := strings.Index(out, `"id"`), strings.Index(out, `"title"`)
-	if idAt == -1 || titleAt == -1 || idAt > titleAt {
-		t.Errorf("expected struct order (id before title), got:\n%s", out)
+	// The input line is already in struct order, so a byte-identical round trip
+	// is the direct statement of the no-churn requirement.
+	if out != line {
+		t.Errorf("plain issue did not round-trip byte-identically\n got: %s\nwant: %s", out, line)
+	}
+	// "title" precedes "status" in struct order but follows it alphabetically, so
+	// this pair distinguishes the fast path from a map-ordered encoding. An
+	// "id" vs "title" check cannot: id precedes title under both orders.
+	if strings.Index(out, `"title"`) > strings.Index(out, `"status"`) {
+		t.Errorf("keys emitted in map order, not struct order:\n%s", out)
 	}
 }
 ```
