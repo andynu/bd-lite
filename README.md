@@ -66,7 +66,9 @@ Everything lives in `.beads/issues.jsonl` -- one JSON object per line, wire-comp
 
 **Issue fields:** id, title, description, status, priority (0-4), issue_type, assignee, created_by, labels, dependencies, comments, timestamps.
 
-Full beads writes fields bd-lite does not model, such as `design`, `notes`, and `acceptance_criteria`. bd-lite preserves them: any key it does not recognize is round-tripped verbatim through the file. Because a write rewrites every line, this matters even for issues you never touch.
+Full beads writes fields bd-lite does not model, such as `design`, `notes`, and `acceptance_criteria`. bd-lite preserves them: any key it does not recognize is round-tripped verbatim, on issues and on the nested objects inside `dependencies` and `comments`. Because a write rewrites every line of the file, this matters even for issues you never touch.
+
+One exception: a key bd-lite *does* model but whose value is empty (`"description": ""`, `"labels": []`) is omitted on write rather than preserved. Absent and empty mean the same thing on read, so nothing is lost.
 
 **Statuses:** open, in_progress, blocked, closed.
 

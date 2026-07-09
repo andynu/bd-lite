@@ -115,9 +115,17 @@ func (i Issue)  MarshalJSON() ([]byte, error)  // merge Extra back over the know
 The set of known keys is derived by reflecting over the struct's json tags, so it
 cannot drift from the struct. Adding `CreatedBy` later requires no change here.
 
+The same treatment is required on the nested `Dependency` and `Comment` structs, not
+just on `Issue`. Upstream writes `metadata` on dependencies. Scoping the fix to `Issue`
+leaves those objects re-encoded from their Go definitions and their unknown keys
+destroyed, which is the identical bug one level down. See bd-lite-ae3.
+
 Known cost: an issue carrying `Extra` marshals through a `map`, so its keys emit in
 alphabetical order rather than struct order. This churns those lines once in the jsonl
-diff and is cosmetic thereafter.
+diff and is cosmetic thereafter. Measured against beads-tui's 164-issue tracker, one
+`bd comment` rewrites 78 lines: 12 reorder top-level keys, 69 carried dependency
+metadata, and 7 change only because a previously HTML-escaped byte is now written
+literally.
 
 ## Display
 
