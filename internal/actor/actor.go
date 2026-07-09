@@ -4,6 +4,7 @@ package actor
 import (
 	"os"
 	"os/exec"
+	"os/user"
 	"strings"
 )
 
@@ -18,8 +19,12 @@ var gitUserName = func() string {
 }
 
 // Name returns the identity to stamp on issues and comments this process
-// creates: $BD_ACTOR, else git config user.name, else $USER. An empty result
-// means the caller should omit the field rather than store a placeholder.
+// creates, resolved in order: $BD_ACTOR, else git config user.name, else $USER,
+// else the OS account name from os/user.Current(). That last source reads the
+// password database (getpwuid) and needs no environment, so in practice it always
+// resolves; it is the fallback cmd/comment.go relied on before it moved to this
+// chain. An empty result (only when even os/user.Current() fails) means the caller
+// should omit the field rather than store a placeholder.
 //
 // Call this from write paths only. It forks a git subprocess, so it must not be
 // hoisted into rootCmd.PersistentPreRunE, where bd list and bd show would pay
@@ -31,5 +36,11 @@ func Name() string {
 	if n := gitUserName(); n != "" {
 		return n
 	}
-	return strings.TrimSpace(os.Getenv("USER"))
+	if u := strings.TrimSpace(os.Getenv("USER")); u != "" {
+		return u
+	}
+	if u, err := user.Current(); err == nil {
+		return strings.TrimSpace(u.Username)
+	}
+	return ""
 }

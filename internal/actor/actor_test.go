@@ -1,6 +1,9 @@
 package actor
 
-import "testing"
+import (
+	"os/user"
+	"testing"
+)
 
 // stubGit replaces the git lookup so tests never shell out or depend on the
 // developer's real git config.
@@ -21,8 +24,7 @@ func TestName(t *testing.T) {
 	}{
 		{"BD_ACTOR wins over git and USER", "ci-bot", "Andy Nutter-Upham", "andy", "ci-bot"},
 		{"git wins over USER", "", "Andy Nutter-Upham", "andy", "Andy Nutter-Upham"},
-		{"USER is the last resort", "", "", "andy", "andy"},
-		{"empty when nothing resolves", "", "", "", ""},
+		{"USER beats the OS-account fallback", "", "", "andy", "andy"},
 		{"BD_ACTOR is trimmed", "  ci-bot  ", "Andy Nutter-Upham", "andy", "ci-bot"},
 		{"blank BD_ACTOR falls through", "   ", "Andy Nutter-Upham", "andy", "Andy Nutter-Upham"},
 	}
@@ -37,5 +39,24 @@ func TestName(t *testing.T) {
 				t.Errorf("Name() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+// TestNameFallsBackToOSUser covers the all-empty case: with $BD_ACTOR and $USER
+// cleared and git returning nothing, Name() must still resolve to the OS account
+// name via os/user.Current() rather than yielding "" (which bd show renders as
+// "anonymous"). This is the last-resort source that never depends on the
+// environment, restored after the chain briefly ended at $USER.
+func TestNameFallsBackToOSUser(t *testing.T) {
+	t.Setenv("BD_ACTOR", "")
+	t.Setenv("USER", "")
+	stubGit(t, "")
+
+	u, err := user.Current()
+	if err != nil {
+		t.Skipf("os/user.Current() unavailable on this platform: %v", err)
+	}
+	if got := Name(); got != u.Username {
+		t.Errorf("Name() = %q, want OS username %q", got, u.Username)
 	}
 }
