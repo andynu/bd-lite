@@ -153,9 +153,12 @@ Rendered by `"%s %s  P%d  %-12s %4s  %s\n"`:
 [ ] bd-lite-z8w  P4  chore          2y  Drop the vendored beads checkout
 ```
 
-`store.go:93` already sorts by `CreatedAt`, so the column reads monotonically.
 `12mo` is the widest value the formatter can emit: months roll over to years at 365
 days, and no plausible year count exceeds two digits.
+
+The column does not read monotonically. `Save()` (`store.go:93`) sorts by `CreatedAt`,
+but `bd list` renders `Filter()` and `bd ready` renders `Ready()`, both of which sort
+by priority first. Age therefore restarts at every priority boundary.
 
 `Age()` currently bottoms out at days, rendering a year-old backlog item as `731d`.
 Extend it through months and years, and split the pure formatting out of the clock
