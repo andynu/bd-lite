@@ -122,3 +122,60 @@ func TestPrintIssueCreatedBySuffix(t *testing.T) {
 		t.Errorf("rendered a creator suffix for an issue that has none:\n%s", without)
 	}
 }
+
+// Age() is a clock read wrapped around pure formatting. Test the pure part
+// against fixed durations so the assertions cannot drift with wall time.
+func TestFormatAge(t *testing.T) {
+	const day = 24 * time.Hour
+	tests := []struct {
+		d    time.Duration
+		want string
+	}{
+		{-5 * time.Minute, "0m"}, // clock skew, or a hand-edited future timestamp
+		{0, "0m"},
+		{59 * time.Minute, "59m"},
+		{time.Hour, "1h"},
+		{23 * time.Hour, "23h"},
+		{day, "1d"},
+		{89 * day, "89d"},
+		{90 * day, "3mo"},
+		{364 * day, "12mo"},
+		{365 * day, "1y"},
+		{730 * day, "2y"},
+	}
+	for _, tt := range tests {
+		if got := formatAge(tt.d); got != tt.want {
+			t.Errorf("formatAge(%v) = %q, want %q", tt.d, got, tt.want)
+		}
+	}
+}
+
+// The column is 4 wide because "12mo" is the widest value formatAge can emit:
+// months roll over to years at 365 days.
+func TestFormatAgeNeverExceedsFourChars(t *testing.T) {
+	const day = 24 * time.Hour
+	for d := time.Duration(0); d < 800*day; d += 7 * time.Hour {
+		if got := formatAge(d); len(got) > 4 {
+			t.Fatalf("formatAge(%v) = %q, wider than the 4-char column", d, got)
+		}
+	}
+}
+
+func TestPrintIssueListShowsAge(t *testing.T) {
+	issue := &types.Issue{
+		ID: "bd-lite-c3d", Title: "Fix dep tree direction",
+		Status: types.StatusOpen, Priority: 1, IssueType: types.TypeBug,
+		CreatedAt: time.Now().Add(-12 * 24 * time.Hour),
+	}
+
+	out := captureStdout(t, func() { PrintIssueList([]*types.Issue{issue}) })
+
+	if !strings.Contains(out, "12d") {
+		t.Errorf("expected a 12d age column, got:\n%s", out)
+	}
+	// The age sits between the type and the title, not after the title.
+	agePos, titlePos := strings.Index(out, "12d"), strings.Index(out, "Fix dep tree")
+	if agePos == -1 || titlePos == -1 || agePos > titlePos {
+		t.Errorf("expected age before title, got:\n%s", out)
+	}
+}

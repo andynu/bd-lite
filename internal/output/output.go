@@ -79,8 +79,9 @@ func PrintIssueList(issues []*types.Issue) {
 
 	for _, issue := range issues {
 		status := statusIcon(issue.Status)
-		fmt.Printf("%s %s  P%d  %-12s  %s\n",
-			status, issue.ID, issue.Priority, issue.IssueType, issue.Title)
+		fmt.Printf("%s %s  P%d  %-12s %4s  %s\n",
+			status, issue.ID, issue.Priority, issue.IssueType,
+			Age(issue.CreatedAt), issue.Title)
 	}
 	fmt.Printf("\n%d issue(s)\n", len(issues))
 }
@@ -252,14 +253,25 @@ func statusIcon(s types.Status) string {
 }
 
 // Age returns a human-readable age string.
-func Age(t time.Time) string {
-	d := time.Since(t)
+func Age(t time.Time) string { return formatAge(time.Since(t)) }
+
+// formatAge renders a duration in the narrowest useful unit. It tops out at
+// years so a stale backlog item reads "2y" rather than "731d", and never
+// exceeds four characters, which is the width of the bd list age column.
+func formatAge(d time.Duration) string {
+	if d < 0 {
+		d = 0 // clock skew, or a hand-edited future timestamp
+	}
 	switch {
 	case d < time.Hour:
 		return fmt.Sprintf("%dm", int(d.Minutes()))
 	case d < 24*time.Hour:
 		return fmt.Sprintf("%dh", int(d.Hours()))
-	default:
+	case d < 90*24*time.Hour:
 		return fmt.Sprintf("%dd", int(d.Hours()/24))
+	case d < 365*24*time.Hour:
+		return fmt.Sprintf("%dmo", int(d.Hours()/24/30))
+	default:
+		return fmt.Sprintf("%dy", int(d.Hours()/24/365))
 	}
 }
