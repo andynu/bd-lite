@@ -1,7 +1,11 @@
 package types
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"reflect"
+	"strings"
 	"time"
 )
 
@@ -22,6 +26,13 @@ type Issue struct {
 	Labels       []string      `json:"labels,omitempty"`
 	Dependencies []*Dependency `json:"dependencies,omitempty"`
 	Comments     []*Comment    `json:"comments,omitempty"`
+
+	// Extra carries JSONL keys this build of bd-lite does not model. Upstream
+	// beads writes design, notes, acceptance_criteria and others; a bd-lite
+	// write rewrites every line of the file, so anything not round-tripped here
+	// is destroyed. Populated by UnmarshalJSON, re-emitted by MarshalJSON,
+	// never read by application code.
+	Extra map[string]json.RawMessage `json:"-"`
 }
 
 // Validate checks if the issue has valid field values.
@@ -48,6 +59,82 @@ func (i *Issue) Validate() error {
 		return fmt.Errorf("non-closed issues cannot have closed_at timestamp")
 	}
 	return nil
+}
+
+// knownIssueKeys is the set of JSON keys Issue models directly. It is derived
+// from the struct tags rather than hand-listed, so adding a field cannot leave
+// a stale duplicate behind in Extra.
+var knownIssueKeys = func() map[string]struct{} {
+	t := reflect.TypeOf(Issue{})
+	keys := make(map[string]struct{}, t.NumField())
+	for i := 0; i < t.NumField(); i++ {
+		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
+		if name != "" && name != "-" {
+			keys[name] = struct{}{}
+		}
+	}
+	return keys
+}()
+
+// marshalNoEscape encodes v without HTML-escaping < > and &. json.Marshal always
+// escapes them, and an outer encoder's SetEscapeHTML(false) cannot undo it: the
+// compact pass only ever escapes. Go source stored in an upstream "design" field
+// would otherwise come back as "ch <- x".
+func marshalNoEscape(v any) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return nil, err
+	}
+	return bytes.TrimRight(buf.Bytes(), "\n"), nil
+}
+
+// UnmarshalJSON decodes the known fields and stashes every other key in Extra.
+func (i *Issue) UnmarshalJSON(data []byte) error {
+	type plain Issue // a defined type inherits no methods, so this cannot recurse
+	var p plain
+	if err := json.Unmarshal(data, &p); err != nil {
+		return err
+	}
+	*i = Issue(p)
+
+	var all map[string]json.RawMessage
+	if err := json.Unmarshal(data, &all); err != nil {
+		return err
+	}
+	for k := range all {
+		if _, known := knownIssueKeys[k]; known {
+			delete(all, k)
+		}
+	}
+	if len(all) > 0 {
+		i.Extra = all
+	}
+	return nil
+}
+
+// MarshalJSON emits the known fields, then merges Extra back in.
+func (i Issue) MarshalJSON() ([]byte, error) {
+	type plain Issue
+	b, err := marshalNoEscape(plain(i))
+	if err != nil {
+		return nil, err
+	}
+	if len(i.Extra) == 0 {
+		return b, nil // no detour through a map; struct key order survives
+	}
+
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(b, &m); err != nil {
+		return nil, err
+	}
+	for k, v := range i.Extra {
+		if _, exists := m[k]; !exists { // a known key always wins
+			m[k] = v
+		}
+	}
+	return marshalNoEscape(m)
 }
 
 type Status string
