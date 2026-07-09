@@ -32,7 +32,7 @@ New package `internal/actor`, one exported function:
 
 ```go
 // Name returns the identity to stamp on records this process creates.
-// $BD_ACTOR -> git config user.name -> $USER -> "" (caller omits the field).
+// $BD_ACTOR -> git config user.name -> $USER -> os/user.Current().Username.
 func Name() string
 ```
 
@@ -41,8 +41,11 @@ without constructing a temp git repo.
 
 This is a trimmed version of upstream's chain. The `--actor` flag, the `$BEADS_ACTOR`
 alias, and the literal `"unknown"` sentinel are all dropped. `$BD_ACTOR` survives
-because it gives tests and scripts a seam. An unresolvable identity yields the empty
-string, and the caller omits the field entirely rather than writing a placeholder.
+because it gives tests and scripts a seam. The chain ends at
+`os/user.Current().Username`, which reads the password database (getpwuid) and needs
+no environment, so in practice it always resolves. Only if even that fails does
+`Name()` return the empty string, in which case the caller omits the field rather than
+writing a placeholder.
 
 **`Name()` is called lazily, at the two write sites.** It must not move into
 `rootCmd.PersistentPreRunE`, which would fork a `git` subprocess on every `bd list`,
@@ -62,6 +65,14 @@ under two spellings with nothing to connect them. Both now come from `actor.Name
 
 This changes observable behavior: new comments record `Andy Nutter-Upham` where they
 used to record `andy`. Existing comments keep their stored value and render unchanged.
+
+Moving the comment author onto `actor.Name()` is not a pure value change. Its former
+source, `user.Current().Username`, reads the password database and never fails; the
+chain as first written ended at `$USER`. So with `$BD_ACTOR` and `$USER` unset and git
+`user.name` blank, a comment lost its author entirely and `bd show` rendered
+`anonymous`, where the old call would still have recorded the OS account name. `Name()`
+therefore ends at `os/user.Current().Username` (bd-lite-i35), preserving the last-resort
+source `cmd/comment.go` used to depend on.
 
 `Dependency.CreatedBy` exists in the struct (`internal/types/types.go:93`) and is
 assigned by nothing (`store.go:377` sets only `CreatedAt`). Populating it would
@@ -188,7 +199,8 @@ This changes default `bd list` output for anything parsing it. Accepted.
 ## Testing
 
 `internal/actor/actor_test.go`, using `t.Setenv` and a stubbed `gitUserName`:
-`$BD_ACTOR` beats git; git beats `$USER`; `$USER` is last; all empty yields `""`.
+`$BD_ACTOR` beats git; git beats `$USER`; `$USER` beats the OS-account fallback; with
+all three empty, `Name()` resolves to `os/user.Current().Username`.
 
 `internal/output/output_test.go`, using the existing `captureStdout` helper:
 `formatAge` as a table test over fixed `time.Duration` values, including the negative
