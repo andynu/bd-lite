@@ -77,10 +77,20 @@ func PrintIssueList(issues []*types.Issue) {
 		return
 	}
 
+	// IDs vary in width (bd-lite-c3d vs bd-lite-38j.13), so pad every ID to the
+	// widest in this batch. Otherwise the fixed-width columns after it land at a
+	// different offset per row and the %4s age column buys nothing.
+	idWidth := 0
+	for _, issue := range issues {
+		if n := len(issue.ID); n > idWidth {
+			idWidth = n
+		}
+	}
+
 	for _, issue := range issues {
 		status := statusIcon(issue.Status)
-		fmt.Printf("%s %s  P%d  %-12s %4s  %s\n",
-			status, issue.ID, issue.Priority, issue.IssueType,
+		fmt.Printf("%s %-*s  P%d  %-12s %4s  %s\n",
+			status, idWidth, issue.ID, issue.Priority, issue.IssueType,
 			Age(issue.CreatedAt), issue.Title)
 	}
 	fmt.Printf("\n%d issue(s)\n", len(issues))

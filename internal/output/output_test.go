@@ -179,3 +179,26 @@ func TestPrintIssueListShowsAge(t *testing.T) {
 		t.Errorf("expected age before title, got:\n%s", out)
 	}
 }
+
+// IDs of differing widths must not knock the later columns out of alignment:
+// every row's priority/type/age column has to start at the same offset.
+func TestPrintIssueListAlignsRaggedIDs(t *testing.T) {
+	created := time.Now().Add(-7 * 30 * 24 * time.Hour)
+	issues := []*types.Issue{
+		{ID: "tui-y4h", Title: "short id", Status: types.StatusBlocked,
+			Priority: 2, IssueType: types.TypeEpic, CreatedAt: created},
+		{ID: "tui-38j.13", Title: "long id", Status: types.StatusBlocked,
+			Priority: 2, IssueType: types.TypeFeature, CreatedAt: created},
+	}
+
+	out := captureStdout(t, func() { PrintIssueList(issues) })
+
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	// Line 0 is the short-id row, line 1 the long-id row; the blank line and
+	// count come after. The "P2" priority marker must sit at the same column.
+	col0 := strings.Index(lines[0], "P2")
+	col1 := strings.Index(lines[1], "P2")
+	if col0 == -1 || col1 == -1 || col0 != col1 {
+		t.Errorf("P2 columns misaligned (%d vs %d), got:\n%s", col0, col1, out)
+	}
+}
