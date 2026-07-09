@@ -164,3 +164,161 @@ func TestIssueUnmarshalResetsExtra(t *testing.T) {
 		t.Errorf("expected Extra reset to nil, got %v", issue.Extra)
 	}
 }
+
+// Upstream beads writes a "metadata" key on dependencies that bd-lite does not
+// model. It must survive a round trip like Issue's unknown keys do.
+func TestDependencyRoundTripPreservesUnknownKeys(t *testing.T) {
+	const depWithUnknownKey = `{"issue_id":"tui-a","depends_on_id":"tui-b",` +
+		`"type":"blocks","created_at":"2026-02-10T13:12:00Z","metadata":"{}"}`
+
+	var dep Dependency
+	if err := json.Unmarshal([]byte(depWithUnknownKey), &dep); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if dep.IssueID != "tui-a" {
+		t.Errorf("known field lost: IssueID = %q", dep.IssueID)
+	}
+	if _, ok := dep.Extra["metadata"]; !ok {
+		t.Errorf("unknown key %q not captured into Extra (have %v)", "metadata", dep.Extra)
+	}
+	if _, ok := dep.Extra["issue_id"]; ok {
+		t.Error("known key \"issue_id\" leaked into Extra")
+	}
+
+	out := encodeLikeStore(t, &dep)
+
+	var got map[string]any
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("re-parse: %v", err)
+	}
+	if got["metadata"] != "{}" {
+		t.Errorf("metadata = %v, want %q", got["metadata"], "{}")
+	}
+	if got["issue_id"] != "tui-a" {
+		t.Errorf("issue_id = %v, want %q", got["issue_id"], "tui-a")
+	}
+}
+
+// A comment's unknown keys must round-trip too, even though no unmodelled
+// comment keys were found in the sample beads-tui data — the same data-loss
+// mechanism applies as soon as upstream adds one.
+func TestCommentRoundTripPreservesUnknownKeys(t *testing.T) {
+	const commentWithUnknownKey = `{"id":7,"issue_id":"tui-a","author":"andy",` +
+		`"text":"hello","created_at":"2026-02-10T13:12:00Z","reactions":["+1"]}`
+
+	var c Comment
+	if err := json.Unmarshal([]byte(commentWithUnknownKey), &c); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if c.Text != "hello" {
+		t.Errorf("known field lost: Text = %q", c.Text)
+	}
+	if _, ok := c.Extra["reactions"]; !ok {
+		t.Errorf("unknown key %q not captured into Extra (have %v)", "reactions", c.Extra)
+	}
+	if _, ok := c.Extra["text"]; ok {
+		t.Error("known key \"text\" leaked into Extra")
+	}
+
+	out := encodeLikeStore(t, &c)
+
+	var got map[string]any
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("re-parse: %v", err)
+	}
+	if reactions, _ := got["reactions"].([]any); len(reactions) != 1 || reactions[0] != "+1" {
+		t.Errorf("reactions = %v, want [\"+1\"]", got["reactions"])
+	}
+	if got["text"] != "hello" {
+		t.Errorf("text = %v, want %q", got["text"], "hello")
+	}
+}
+
+// A Dependency's unknown value carrying Go-source-like text with < and & must
+// survive nested inside an Issue's MarshalJSON, which takes the Extra-empty
+// fast path itself while its Dependencies slice does not. This confirms
+// escaping-safety is not just a top-level Issue property.
+func TestNestedExtraDoesNotHTMLEscape(t *testing.T) {
+	issue := Issue{
+		ID:     "tui-a",
+		Title:  "Has a risky dependency",
+		Status: StatusOpen,
+		Dependencies: []*Dependency{
+			{
+				IssueID:     "tui-a",
+				DependsOnID: "tui-b",
+				Type:        DepBlocks,
+				Extra: map[string]json.RawMessage{
+					"note": json.RawMessage(`"ch <- x && y"`),
+				},
+			},
+		},
+	}
+	if issue.Extra != nil {
+		t.Fatalf("precondition: Issue.Extra must be empty to exercise the fast path, got %v", issue.Extra)
+	}
+
+	out := encodeLikeStore(t, &issue)
+
+	if !strings.Contains(out, `ch <- x && y`) {
+		t.Errorf("nested note HTML-escaped or lost:\n%s", out)
+	}
+	// Guard the specific escapes json.Marshal would have introduced. Asserting
+	// on "<" would be vacuous: the correct output contains a literal "<".
+	for _, esc := range []string{"\\u003c", "\\u003e", "\\u0026"} {
+		if strings.Contains(out, esc) {
+			t.Errorf("output contains HTML escape %s:\n%s", esc, out)
+		}
+	}
+}
+
+// A dependency with no unknown keys must not detour through a map, so its
+// keys keep struct order. issue_id precedes depends_on_id in struct order but
+// follows it alphabetically, so this pair distinguishes the fast path from a
+// map-ordered encoding.
+func TestDependencyWithoutExtraKeepsStructKeyOrder(t *testing.T) {
+	var dep Dependency
+	line := `{"issue_id":"tui-a","depends_on_id":"tui-b","type":"blocks",` +
+		`"created_at":"2026-07-09T12:00:00Z"}`
+	if err := json.Unmarshal([]byte(line), &dep); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if dep.Extra != nil {
+		t.Errorf("Extra should be nil for a plain dependency, got %v", dep.Extra)
+	}
+
+	out := encodeLikeStore(t, &dep)
+
+	if out != line {
+		t.Errorf("plain dependency did not round-trip byte-identically\n got: %s\nwant: %s", out, line)
+	}
+	if strings.Index(out, `"issue_id"`) > strings.Index(out, `"depends_on_id"`) {
+		t.Errorf("keys emitted in map order, not struct order:\n%s", out)
+	}
+}
+
+// A known field on a nested struct must always win over an Extra entry of the
+// same name, mirroring the Issue-level guarantee.
+func TestDependencyMarshalKnownFieldWinsOverExtra(t *testing.T) {
+	dep := Dependency{
+		IssueID:     "tui-a",
+		DependsOnID: "tui-b",
+		Type:        DepBlocks,
+		Extra: map[string]json.RawMessage{
+			"issue_id": json.RawMessage(`"from extra"`),
+		},
+	}
+
+	out := encodeLikeStore(t, &dep)
+
+	if n := strings.Count(out, `"issue_id"`); n != 1 {
+		t.Errorf("expected \"issue_id\" key exactly once, appeared %d times:\n%s", n, out)
+	}
+	var got map[string]any
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("re-parse: %v", err)
+	}
+	if got["issue_id"] != "tui-a" {
+		t.Errorf("issue_id = %v, want struct field %q to win over Extra", got["issue_id"], "tui-a")
+	}
+}
