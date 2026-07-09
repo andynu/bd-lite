@@ -104,8 +104,63 @@ func TestIssueWithoutExtraKeepsStructKeyOrder(t *testing.T) {
 
 	out := encodeLikeStore(t, &issue)
 
-	idAt, titleAt := strings.Index(out, `"id"`), strings.Index(out, `"title"`)
-	if idAt == -1 || titleAt == -1 || idAt > titleAt {
-		t.Errorf("expected struct order (id before title), got:\n%s", out)
+	if out != line {
+		t.Errorf("plain issue did not round-trip byte-identically\n got: %s\nwant: %s", out, line)
+	}
+
+	// "title" precedes "status" in struct order but follows it alphabetically,
+	// so this pair distinguishes the fast path from a map-ordered encoding.
+	// (An "id" vs "title" check cannot: id precedes title under both orders.)
+	if strings.Index(out, `"title"`) > strings.Index(out, `"status"`) {
+		t.Errorf("keys emitted in map order, not struct order:\n%s", out)
+	}
+}
+
+// A known field must always win over an Extra entry of the same name. This
+// branch is unreachable via UnmarshalJSON, which deletes known keys from
+// Extra before storing it, so it needs a hand-built Issue to exercise.
+func TestIssueMarshalKnownFieldWinsOverExtra(t *testing.T) {
+	issue := Issue{
+		ID:     "bd-lite-bbb",
+		Title:  "Real title",
+		Status: StatusOpen,
+		Extra: map[string]json.RawMessage{
+			"title": json.RawMessage(`"from extra"`),
+		},
+	}
+
+	out := encodeLikeStore(t, &issue)
+
+	if n := strings.Count(out, `"title"`); n != 1 {
+		t.Errorf("expected \"title\" key exactly once, appeared %d times:\n%s", n, out)
+	}
+	var got map[string]any
+	if err := json.Unmarshal([]byte(out), &got); err != nil {
+		t.Fatalf("re-parse: %v", err)
+	}
+	if got["title"] != "Real title" {
+		t.Errorf("title = %v, want struct field %q to win over Extra", got["title"], "Real title")
+	}
+}
+
+// Unmarshalling a line with no unknown keys into a previously-populated Issue
+// must clear Extra, not leave the prior contents behind.
+func TestIssueUnmarshalResetsExtra(t *testing.T) {
+	var issue Issue
+	if err := json.Unmarshal([]byte(issueWithUnknownKeys), &issue); err != nil {
+		t.Fatalf("unmarshal with unknown keys: %v", err)
+	}
+	if len(issue.Extra) == 0 {
+		t.Fatalf("expected Extra to be populated as a precondition, got %v", issue.Extra)
+	}
+
+	plainLine := `{"id":"bd-lite-ccc","title":"Plain","status":"open","priority":2,` +
+		`"issue_type":"task","created_at":"2026-07-09T12:00:00Z",` +
+		`"updated_at":"2026-07-09T12:00:00Z"}`
+	if err := json.Unmarshal([]byte(plainLine), &issue); err != nil {
+		t.Fatalf("unmarshal plain line: %v", err)
+	}
+	if issue.Extra != nil {
+		t.Errorf("expected Extra reset to nil, got %v", issue.Extra)
 	}
 }

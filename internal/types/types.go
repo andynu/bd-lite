@@ -87,7 +87,7 @@ func marshalNoEscape(v any) ([]byte, error) {
 	if err := enc.Encode(v); err != nil {
 		return nil, err
 	}
-	return bytes.TrimRight(buf.Bytes(), "\n"), nil
+	return bytes.TrimSuffix(buf.Bytes(), []byte("\n")), nil
 }
 
 // UnmarshalJSON decodes the known fields and stashes every other key in Extra.
@@ -125,6 +125,10 @@ func (i Issue) MarshalJSON() ([]byte, error) {
 		return b, nil // no detour through a map; struct key order survives
 	}
 
+	// Extra is non-empty: encoding through this map emits keys in alphabetical
+	// order (Go sorts map keys), not struct order. That is one-time diff churn
+	// on lines that already carry unknown keys, not data loss — every value is
+	// preserved as raw bytes.
 	var m map[string]json.RawMessage
 	if err := json.Unmarshal(b, &m); err != nil {
 		return nil, err
