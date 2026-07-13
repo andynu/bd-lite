@@ -44,7 +44,7 @@ bd close myproject-abc --reason "Fixed"
 | `bd dep add <id> <depends-on>` | Add a blocking dependency |
 | `bd dep remove <id> <depends-on>` | Remove a dependency |
 | `bd dep tree <id>` | ASCII tree of what `<id>` depends on, recursively |
-| `bd cleanup [--older-than N --dry-run --no-archive]` | Archive and delete closed issues |
+| `bd cleanup [--older-than N --dry-run --no-archive --yes]` | Archive and delete closed issues |
 | `bd comment <id> "text"` | Add a comment |
 
 All commands support `--json` for machine-readable output.
@@ -63,6 +63,8 @@ BD_ACTOR="release-bot" bd create "Cut 1.2"   # created_by: release-bot
 ## Data Model
 
 Everything lives in `.beads/issues.jsonl` -- one JSON object per line, wire-compatible with the full beads format. Closed issues can be archived to `.beads/archive.jsonl` and removed with `bd cleanup`.
+
+Before deleting anything, `bd cleanup` writes a full copy of `issues.jsonl` to `.beads/.cleanup-backups/issues-<timestamp>.jsonl` -- unconditionally, even under `--no-archive`. From a script or hook (stdin not a terminal), it refuses to run unless you pass `--yes`; from a terminal, it prints the count and backup path and asks for `y/N` confirmation unless `--yes` is passed.
 
 **Issue fields:** id, title, description, status, priority (0-4), issue_type, assignee, created_by, labels, dependencies, comments, timestamps.
 
