@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -85,13 +86,33 @@ func (s *Store) loadFromFile() error {
 	return scanner.Err()
 }
 
+// sortForWrite orders issues by created_by, then id, in place.
+//
+// Author, not created_at: two people rarely start work in the same part of
+// the file when the file is naturally partitioned by who filed the issue.
+// Andy's issues cluster together, Scott's cluster together, and a concurrent
+// bd create from each of them lands in a different region of the file
+// instead of both racing to append at the same insertion point. Sorting by
+// created_at put every new issue at EOF regardless of author, which made
+// that collision certain rather than merely likely.
+//
+// Id is the tiebreak within a block: it's unique, unlike created_at, so the
+// order inside one author's issues is total and the write is deterministic.
+// An unset created_by (issues predate the field, or came from another tool)
+// sorts first, as the empty string, with no special-casing needed.
+func sortForWrite(issues []*types.Issue) {
+	sort.Slice(issues, func(i, j int) bool {
+		if issues[i].CreatedBy != issues[j].CreatedBy {
+			return issues[i].CreatedBy < issues[j].CreatedBy
+		}
+		return issues[i].ID < issues[j].ID
+	})
+}
+
 // Save writes all issues to issues.jsonl atomically.
 func (s *Store) Save() error {
-	// Sort issues by created_at for stable output
 	issues := s.AllIssues()
-	sort.Slice(issues, func(i, j int) bool {
-		return issues[i].CreatedAt.Before(issues[j].CreatedAt)
-	})
+	sortForWrite(issues)
 
 	tmpPath := s.path + ".tmp"
 	file, err := os.Create(tmpPath)
@@ -126,6 +147,12 @@ func (s *Store) Save() error {
 
 // SaveToFile writes issues to a specific file atomically (used for archive).
 func (s *Store) SaveToFile(path string, issues []*types.Issue) error {
+	// cleanup collects its archive batch by ranging over AllIssues, so what
+	// arrives here is in map order. Sort a copy: the caller's slice order is
+	// not ours to change.
+	issues = slices.Clone(issues)
+	sortForWrite(issues)
+
 	tmpPath := path + ".tmp"
 	file, err := os.Create(tmpPath)
 	if err != nil {
