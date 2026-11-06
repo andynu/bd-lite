@@ -26,6 +26,11 @@ var gitUserName = func() string {
 // chain. An empty result (only when even os/user.Current() fails) means the caller
 // should omit the field rather than store a placeholder.
 //
+// Under Claude Code (CLAUDECODE=1) and with no $BD_ACTOR, the human from that
+// chain is tagged "<human>/claude", so an agent's records stay attributable to
+// the person it works for and distinguishable from that person's own. The slash
+// form is bd-lite-tui's identity convention: the segment before it is the human.
+//
 // Call this from write paths only. It forks a git subprocess, so it must not be
 // hoisted into rootCmd.PersistentPreRunE, where bd list and bd show would pay
 // for it on every invocation.
@@ -33,6 +38,14 @@ func Name() string {
 	if a := strings.TrimSpace(os.Getenv("BD_ACTOR")); a != "" {
 		return a
 	}
+	h := human()
+	if h != "" && os.Getenv("CLAUDECODE") == "1" {
+		return h + "/claude"
+	}
+	return h
+}
+
+func human() string {
 	if n := gitUserName(); n != "" {
 		return n
 	}

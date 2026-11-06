@@ -33,6 +33,36 @@ func TestName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("BD_ACTOR", tt.bdActor)
 			t.Setenv("USER", tt.user)
+			t.Setenv("CLAUDECODE", "")
+			stubGit(t, tt.gitName)
+
+			if got := Name(); got != tt.want {
+				t.Errorf("Name() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNameUnderClaudeCode(t *testing.T) {
+	tests := []struct {
+		name       string
+		claudeCode string
+		bdActor    string
+		gitName    string
+		user       string
+		want       string
+	}{
+		{"agent is tagged after its human", "1", "", "Andy", "andy", "Andy/claude"},
+		{"human falls back to USER", "1", "", "", "skm", "skm/claude"},
+		{"BD_ACTOR still wins", "1", "ci-bot", "Andy", "andy", "ci-bot"},
+		{"CLAUDECODE other than 1 is not an agent", "0", "", "Andy", "andy", "Andy"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("CLAUDECODE", tt.claudeCode)
+			t.Setenv("BD_ACTOR", tt.bdActor)
+			t.Setenv("USER", tt.user)
 			stubGit(t, tt.gitName)
 
 			if got := Name(); got != tt.want {
@@ -50,6 +80,7 @@ func TestName(t *testing.T) {
 func TestNameFallsBackToOSUser(t *testing.T) {
 	t.Setenv("BD_ACTOR", "")
 	t.Setenv("USER", "")
+	t.Setenv("CLAUDECODE", "")
 	stubGit(t, "")
 
 	u, err := user.Current()

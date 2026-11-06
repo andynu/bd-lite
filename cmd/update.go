@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"bd-lite/internal/actor"
 	"bd-lite/internal/output"
 	"bd-lite/internal/types"
 
@@ -61,10 +62,12 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		if newStatus == types.StatusClosed && issue.Status != types.StatusClosed {
 			now := time.Now()
 			issue.ClosedAt = &now
+			issue.ClosedBy = actor.Name()
 		}
 		if newStatus != types.StatusClosed && issue.Status == types.StatusClosed {
 			issue.ClosedAt = nil
 			issue.CloseReason = ""
+			issue.ClosedBy = ""
 		}
 
 		issue.Status = newStatus

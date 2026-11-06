@@ -53,7 +53,11 @@ func PrintIssue(issue *types.Issue) {
 		}
 	}
 	if issue.CloseReason != "" {
-		fmt.Printf("  Closed:   %s (%s)\n", issue.ClosedAt.Format("2006-01-02"), issue.CloseReason)
+		closedBy := ""
+		if issue.ClosedBy != "" {
+			closedBy = " by " + issue.ClosedBy
+		}
+		fmt.Printf("  Closed:   %s%s (%s)\n", issue.ClosedAt.Format("2006-01-02"), closedBy, issue.CloseReason)
 	}
 	created := issue.CreatedAt.Format("2006-01-02 15:04")
 	if issue.CreatedBy != "" {

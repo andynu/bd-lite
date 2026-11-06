@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"bd-lite/internal/actor"
 	"bd-lite/internal/output"
 	"bd-lite/internal/types"
 
@@ -44,6 +45,7 @@ func runClose(cmd *cobra.Command, args []string) error {
 		issue.Status = types.StatusClosed
 		issue.ClosedAt = &now
 		issue.CloseReason = closeReason
+		issue.ClosedBy = actor.Name()
 		issue.UpdatedAt = now
 
 		st.Put(issue)

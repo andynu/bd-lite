@@ -24,6 +24,7 @@ type Issue struct {
 	UpdatedAt    time.Time     `json:"updated_at"`
 	ClosedAt     *time.Time    `json:"closed_at,omitempty"`
 	CloseReason  string        `json:"close_reason,omitempty"`
+	ClosedBy     string        `json:"closed_by,omitempty"`
 	Labels       []string      `json:"labels,omitempty"`
 	Dependencies []*Dependency `json:"dependencies,omitempty"`
 	Comments     []*Comment    `json:"comments,omitempty"`
