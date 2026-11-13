@@ -557,28 +557,12 @@ func readPrefixFromConfig(path string) string {
 }
 
 func extractIssuePrefix(issueID string) string {
+	// Suffixes are base36 and never contain a hyphen, while prefixes may.
 	lastIdx := strings.LastIndex(issueID, "-")
 	if lastIdx <= 0 {
 		return ""
 	}
-
-	suffix := issueID[lastIdx+1:]
-	if len(suffix) > 0 {
-		numPart := suffix
-		if dotIdx := strings.Index(suffix, "."); dotIdx > 0 {
-			numPart = suffix[:dotIdx]
-		}
-		var num int
-		if _, err := fmt.Sscanf(numPart, "%d", &num); err == nil {
-			return issueID[:lastIdx]
-		}
-	}
-
-	firstIdx := strings.Index(issueID, "-")
-	if firstIdx <= 0 {
-		return ""
-	}
-	return issueID[:firstIdx]
+	return issueID[:lastIdx]
 }
 
 // SanitizePrefix cleans a string for use as an issue ID prefix.
