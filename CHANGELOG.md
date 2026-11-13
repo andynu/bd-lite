@@ -29,6 +29,15 @@ the same `issues.jsonl`.
 
 ### Added
 
+- When GitHub has a newer release, every command prints a notice to stderr
+  with the command that downloads it beside the running binary and moves it
+  into place. The check runs at most once a day, is cached in
+  `~/.cache/bd-lite/latest.json`, stays quiet when it fails, and is skipped for
+  untagged or modified builds and under `BD_NO_UPDATE_CHECK=1`. bd never updates
+  itself. Builds older than this one have no notice and need one manual update.
+  (2026-11-13)
+- Releases carry a prebuilt `bd-linux-amd64`, published by `make release`.
+  (2026-11-13)
 - `bd --version` (and `-v`) prints the version stamped from the git tag at
   build time. Untagged builds print a pseudo-version, and a build from a
   modified tree ends in `+dirty`. (2026-11-13)
