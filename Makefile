@@ -1,4 +1,4 @@
-.PHONY: build test fmt fmt-check
+.PHONY: build test fmt fmt-check release
 
 # beads/ is a vendored copy of upstream and is not gofmt-clean; formatting it
 # would create noise in every diff against upstream.
@@ -25,3 +25,8 @@ fmt-check:
 		exit 1; \
 	fi
 	@echo "gofmt: clean"
+
+# Publish the tagged HEAD to GitHub with a linux/amd64 binary. The tag must
+# already be pushed; see scripts/release.sh for the guards.
+release:
+	@scripts/release.sh

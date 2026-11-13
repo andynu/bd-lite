@@ -6,17 +6,33 @@ But I didn't need all of that. I just needed the six commands I actually use eve
 
 ## Install
 
+Download the linux/amd64 binary from the latest release:
+
 ```bash
-go install bd-lite@latest
+curl -fsSL https://github.com/andynu/bd-lite/releases/latest/download/bd-linux-amd64 -o ~/.local/bin/bd
+chmod +x ~/.local/bin/bd
 ```
 
-Or build from source:
+Or build from source, which installs to `~/.local/bin/bd` (override with `INSTALL_DIR`):
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/andynu/bd-lite.git
 cd bd-lite
-go build -o bd .
+./install.sh
 ```
+
+`bd --version` prints the release tag the binary was built from.
+
+### Update notice
+
+Once a day, bd asks GitHub for the latest release. When it is newer than the running binary, every command prints a notice to stderr with the command that downloads it into place:
+
+```
+bd: v0.2.0 is available (you have v0.1.0). To update:
+  curl -fsSL https://github.com/andynu/bd-lite/releases/download/v0.2.0/bd-linux-amd64 -o /home/you/.local/bin/bd.new && chmod +x /home/you/.local/bin/bd.new && mv /home/you/.local/bin/bd.new /home/you/.local/bin/bd
+```
+
+bd never updates itself. The answer is cached in `~/.cache/bd-lite/latest.json`, so only the first command of the day touches the network, and a failed check stays quiet. Builds from a modified tree or without a release tag skip the check, and `BD_NO_UPDATE_CHECK=1` turns it off.
 
 ## Quick Start
 
@@ -100,6 +116,14 @@ If you need any of these, use [beads](https://github.com/steveyegge/beads):
 
 - [beans](https://github.com/hmans/beans) -- Go CLI issue tracker storing tasks as plain Markdown files in `.beans/`. Built-in GraphQL query engine and terminal UI.
 - [ticket](https://github.com/wedow/ticket) -- Bash-based issue tracker storing tickets as Markdown with YAML frontmatter in `.tickets/`. Unix-inspired, zero setup, plugin extensible.
+
+## Releasing
+
+1. Date the version's section in `CHANGELOG.md` (`## [0.2.0] - 2026-12-01`) and commit.
+2. `git tag v0.2.0 && git push origin main v0.2.0`
+3. `make release`
+
+`make release` refuses unless the tree is clean, HEAD is exactly a `vX.Y.Z` tag that is already on origin, and the changelog has a dated section for it. It builds `dist/bd-linux-amd64`, checks that the binary reports the tag, and creates the GitHub release with that changelog section as its notes.
 
 ## License
 

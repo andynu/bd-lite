@@ -1,6 +1,9 @@
 # Binary
 bd
 
+# Release build output
+dist/
+
 # Beads reference source (not part of bd-lite)
 beads/
 
