@@ -4,6 +4,7 @@ go 1.26.0
 
 require (
 	github.com/spf13/cobra v1.9.1
+	golang.org/x/mod v0.43.0
 	golang.org/x/term v0.45.0
 )
 
