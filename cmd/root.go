@@ -37,6 +37,12 @@ func init() {
 }
 
 func Execute() error {
+	err := execute()
+	printUpdateNotice()
+	return err
+}
+
+func execute() error {
 	err := rootCmd.Execute()
 	if err == nil {
 		return nil
@@ -55,6 +61,8 @@ func Execute() error {
 				cmd.Stderr = os.Stderr
 				if runErr := cmd.Run(); runErr != nil {
 					if exitErr, ok := runErr.(*exec.ExitError); ok {
+						// os.Exit skips Execute's notice, so print it here.
+						printUpdateNotice()
 						os.Exit(exitErr.ExitCode())
 					}
 					return runErr
