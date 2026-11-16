@@ -6,7 +6,7 @@ pseudo-version. To see when an installed binary was built, run
 change landed on `main`, so anything dated after your `vcs.time` is missing
 from your binary.
 
-## [0.1.0] - Unreleased
+## [0.1.0] - 2026-11-16
 
 First tagged release. It covers everything since the initial commit on
 2026-02-26.
