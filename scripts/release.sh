@@ -22,7 +22,9 @@ git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null ||
 mkdir -p dist
 GOOS=linux GOARCH=amd64 go build -o dist/bd-linux-amd64 .
 
-built=$(dist/bd-linux-amd64 --version)
+# The release is not published yet, so a check here would only cache a miss
+# in the releaser's own update cache.
+built=$(BD_NO_UPDATE_CHECK=1 dist/bd-linux-amd64 --version)
 [ "$built" = "bd version $tag" ] || die "binary reports '$built', expected 'bd version $tag'"
 
 version=${tag#v}
